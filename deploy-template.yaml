@@ -1,0 +1,52 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: ${SERVICE_NAME}
+  labels:
+    cloud.googleapis.com/location: ${SERVICE_REGION}
+  annotations:
+    run.googleapis.com/launch-stage: ALPHA
+    run.googleapis.com/ingress: all
+    run.googleapis.com/maxScale: '1'
+    run.googleapis.com/minScale: '${MIN_INSTANCES}'
+
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      serviceAccountName: ${SERVICE_ACCOUNT}
+      containers:
+      - image: ${SERVICE_REGION}-docker.pkg.dev/${PROJECT_ID}/n8n-docker/n8nio/n8n
+        ports:
+        - containerPort: 5678
+        env:
+        - name: PERSIST_DIRECTORY
+          value: /home/node/.n8n
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 4Gi
+        volumeMounts:
+        - name: gcs-1
+          mountPath: /home/node/.n8n
+        startupProbe:
+          timeoutSeconds: 240
+          periodSeconds: 240
+          failureThreshold: 1
+          tcpSocket:
+            port: 5678
+      volumes:
+      - name: gcs-1
+        csi:
+          driver: gcsfuse.run.googleapis.com
+          readOnly: false
+          volumeAttributes:
+            bucketName: ${BUCKET_NAME}
+  traffic:
+  - percent: 100
+    latestRevision: true
