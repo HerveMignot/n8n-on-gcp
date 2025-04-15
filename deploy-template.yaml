@@ -27,6 +27,12 @@ spec:
         env:
         - name: PERSIST_DIRECTORY
           value: /home/node/.n8n
+        - name: WEBHOOK_URL
+          value: ${N8N_URL}
+        - name: N8N_PROTOCOL
+          value: ${N8N_PROTOCOL}
+        - name: N8N_HOST
+          value: ${N8N_HOST} 
         resources:
           limits:
             cpu: 1000m

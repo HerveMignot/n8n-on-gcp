@@ -12,6 +12,11 @@ export MIN_INSTANCES=0  # Set to 1 to keep the service always on
 # Set GCP projet id
 export PROJECT_ID="project-id"
 
+# Set N8N Environment Varaibles
+export N8N_PROTOCOL="https"
+export N8N_HOST="n8n.yourdomain.tld"
+export N8N_URL="${N8N_PROTOCOL}://${N8N_HOST}"
+
 # Replace variables in the template file
 envsubst < deploy-template.yaml > tmp/deploy.yaml
 
