@@ -13,7 +13,7 @@ If you are new to GCP or `gcloud` CLI, Google provides extensive documentation t
 
 Note: be sure to have a recent version of `gcloud` CLI installed, as the deployment is using CSI volumes for Cloud Run (early 2023). You can update your `gcloud` CLI with the following command: `gcloud components update`.
 
-Shell scripts are used, consider using Git Bash on Windows if no Unix-like shell is installed on the environment.
+Shell scripts are used, consider using Git Bash on Windows if no Unix-like shell is installed on your environment.
 
 Clone this project onto your environmment to customize setup parameters, as explained below.
 
@@ -46,14 +46,44 @@ Cloud Run will be able to use the n8n docker image that will be copied from n8n 
 
 ## Prepare information for deployment
 
-The following parameters will be used to customize the deployment of the ChromaDB service on Cloud Run. Please review and prepare them for the deployment steps below.
+The following parameters will be used to customize the deployment of the N8N service on Cloud Run. Please review and prepare them for the deployment steps below.
 | Parameter             | Description |
 |-----------------------|-------------|
 | `<YOUR_BUCKET_NAME>`  | The name of the Google Cloud Storage bucket where the n8n data will be stored. This bucket will be created in the next step. |
 | `<REGION>`            | The region where the Google Cloud Storage bucket and the Cloud Run service will be deployed. Choose a region based on your requirements and the location of your users, e.g., `europe-west1` for the EU West region, `us-central1` for the US Central region. |
 | `<YOUR_PROJECT_ID>`   | The ID of your Google Cloud project. You can find your project ID in the Google Cloud Console, under the project name or in the project settings page. |
-| `<SERVICE_NAME>`      | The name of the Cloud Run service (e.g., `chroma`). |
-| `<SERVICE_ACCOUNT>`   | The GCP service account to run the service. Usually, the default Compute Engine service account is used, which can be found on the Google Cloud project IAM page. However, it is a better security practice to have a dedicated service account created for the service. |
+| `<SERVICE_NAME>`      | The name of the Cloud Run service (e.g., `n8n`). |
+| `<SERVICE_ACCOUNT>`   | The GCP service account to run the service. Usually, the default Compute Engine service account is used, which can be found on the Google Cloud project IAM page (usually `<gcp_project_number>-compute@developer.gserviceaccount.com`). However, it is a better security practice to have a dedicated service account created for the service. |
+
+### About N8N URL & hostname
+
+You have the option with Cloud Run to configure a custom domain ([documentation](https://cloud.google.com/run/docs/mapping-custom-domains)). This can be used to have a nicer URL to communicate to your users.
+
+```bash
+# Set N8N Environment Varaibles
+# To be used with Cloud Run Custom Domains
+N8N_PROTOCOL="https"
+N8N_HOST="n8n.yourdomain.tld"
+N8N_URL="${N8N_PROTOCOL}://${N8N_HOST}"
+```
+
+| Parameter             | Description |
+|-----------------------|-------------|
+| `N8N_PROTOCOL`   | Should be 'https'. |
+| `N8N_HOST`   | The hostname with the domain you would like to use (such as n8n.yourdomain.com). |
+| `N8N_URL`   | Computed from the two previous parameter. Change if you know what you are doing. |
+
+In case you would like to stay with the standard Cloud Run, comment out this part of the script like this:
+
+```bash
+# Set N8N Environment Varaibles
+# To be used with Cloud Run Custom Domains
+#N8N_PROTOCOL="https"
+#N8N_HOST="n8n.yourdomain.tld"
+#N8N_URL="${N8N_PROTOCOL}://${N8N_HOST}"
+```
+
+The script will then go for a standard Cloud Run URL, displayed after deployment command.
 
 
 ## Step 1: Create a Google Cloud Storage Bucket
@@ -79,11 +109,25 @@ cp generate_yaml.sh my_generate_yaml.sh
 
 Edit the bash script to replace the following variables:
 - `SERVICE_NAME`: name of the Cloud Run service (default: n8n)
-- `SERVICE_ACCOUNT`: GCP service account to run the service (usually the default Compute Engine SA, get its name from the Google Cloud project IAM page)
+- `SERVICE_ACCOUNT`: GCP service account to run the service (usually the default Compute Engine SA, get its name from the Google Cloud project IAM page, usually `<gcp_project_number>-compute@developer.gserviceaccount.com`)
 - `SERVICE_REGION`: name of the region the service will be deployed to (example: europe-west1)
 - `BUCKET_NAME`: name of the bucket created in Step 1
 - `PROJECT_ID`: name of the GCP project where n8n is going to be deployed
 
+Then use the script you updated with your information to generate the yaml file that we are going to use to deploy on Cloud Run.
+
+```bash
+./my_generate_yaml.sh
+```
+if you renamed the script to `my_generate_yaml.sh`
+or if not:
+```bash
+./generate_yaml.sh
+```
+
+This script will generate a `deploy.yaml` file with all parameters set.
+
+It will also display the exact commands you should execute to deploy on Cloud Run. The arguments from these commands are set so that you just need to copy paste these commands.
 
 ## Step 3: Deploy the Cloud Run Service
 
@@ -91,8 +135,7 @@ Run gcloud command to deploy the service:
 ```bash
 gcloud run services replace deploy.yaml --project <YOUR_PROJECT_ID>
 ```
-Note: you can copy paste the second command from the output of the step 2 command.
-
+Note: you can copy paste the first command from the output of the step 2 command.
 
 ## Step 4: Allow unauthenticated traffic on the service
 
@@ -102,12 +145,12 @@ gcloud run services add-iam-policy-binding <SERVICE_NAME> --member="allUsers" --
 ```
 Note: you can copy paste the second command from the output of the step 2 command.
 
-Remark: it is not possible to instruct this traffic rule from the YAML file.
+Remark: it is not possible to instruct this traffic rule from the YAML file. You need to run this command.
 
 ## Step 5: Check n8n is running fine
 
-Open the n8n service URL in your browser, its URL has been output when step 3 is finishing. No need to add the port number like when running in local, n8n can be reached on then standard port (https).
+Open the n8n service URL in your browser, its URL is output when step 3 is finishing. No need to add the port number like when running in local, n8n can be reached on then standard port (https).
 
-Remark : the initial run is pretty long, n8n is setting up a lot of things.
+Remark: the initial run is pretty long, n8n is setting up a lot of things.
 
 Refer to n8n documentation to test the n8n service.
