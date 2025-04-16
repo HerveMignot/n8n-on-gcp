@@ -42,7 +42,6 @@ export N8N_ENV
 envsubst < deploy-template.yaml > deploy.yaml
 
 # Now you can use the deploy.yaml file for your deployment
-# Authentication is managed by ChromaDB, so no need to authenticate with gcloud
 echo Use the following command to deploy the service:
 echo    gcloud run services replace deploy.yaml --project "$PROJECT_ID"
 echo then allow authenticated access:
